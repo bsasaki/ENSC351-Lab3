@@ -9,22 +9,20 @@ using namespace std;
 
 int main() {
 	ifstream in_file;
-	std::map<std::string, int> wordCount;
+	//std::map<std::string, int> wordCount;
 	in_file.open("L3In.txt", std::ifstream::in);
 	//wordCount = first_word_counter(in_file);
 
 	std::vector<std::string> words; //Vector to hold unsorted words
-	words = input_read(in_file);
-
-	std::vector<myMap> v;
-	for (int i = 0; i < 10; i++) {
-		//test
-		myMap m;
-		m.key = "a";
-		m.value = 1;
-		v.push_back(m);
+	words = input_read(in_file); //
+	std::vector<myMap> maps;
+	
+	for (int i = 0; i <= words.size(); i++) {
+		myMap m = map_func(words[i]);
+		maps.push_back(m);
 	}
-	myMap m1 = reduce(v);
+
+
 
 	cin.get();
 
@@ -100,6 +98,11 @@ myMap reduce(std::vector<myMap> v1) {
 }
 
 void output(myMap m) {
+	/* map_func- Section 4.1.4
+   Purpose: outputs word count for a given key-value pair
+   Input: a single key-value pair
+   Output: N/A
+*/
 	cout << m.key << ": " << m.value << "\n";
 	return;
 }
