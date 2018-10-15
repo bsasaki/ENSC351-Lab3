@@ -58,6 +58,30 @@ std::vector<std::string> input_read(std::ifstream& in_file) {
 	return vect;
 }
 
-std::map<std::string, int> map_func(std::vector<std::string>) {
+std::map<std::string, int> map_func(std::string key) {
+	/* map_func- Section 4.1.2
+	   Purpose: creates a key-value pair with a value one for a given key
+	   Input: string which will be the key of the key-value pair
+	   Output: key-value pair 
+	   Note: does not check for delimeters, only spaces.
+			 We can fix that later if we need to
+	*/
+	std::map<std::string, int> this_map;
+	this_map["key"] = 1;
+	return this_map;
+}
 
+std::map<std::string, int> reduce(std::list<std::map<std::string, int>> l1) {
+	/* map_func- Section 4.1.3
+	   Purpose: creates a single key-value pair given a list of pairs with the same keys
+	   Input: list of key-value pairs, which should have the same key
+	   Output: a single key-value pair with correct value
+	   Note: does not check for delimeters, only spaces.
+			 We can fix that later if we need to
+	*/
+
+	//TO DO
+
+	std::map<std::string, int> this_map;
+	return this_map;
 }
