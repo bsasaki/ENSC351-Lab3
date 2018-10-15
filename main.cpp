@@ -6,6 +6,7 @@ Authors: Bennett Sasaki & Jordan Kam
 
 using namespace std;
 
+
 int main() {
 	ifstream in_file;
 	std::map<std::string, int> wordCount;
@@ -14,6 +15,16 @@ int main() {
 
 	std::vector<std::string> words; //Vector to hold unsorted words
 	words = input_read(in_file);
+
+	std::vector<myMap> v;
+	for (int i = 0; i < 10; i++) {
+		//test
+		myMap m;
+		m.key = "a";
+		m.value = 1;
+		v.push_back(m);
+	}
+	myMap m1 = reduce(v);
 
 	cin.get();
 
@@ -58,7 +69,7 @@ std::vector<std::string> input_read(std::ifstream& in_file) {
 	return vect;
 }
 
-std::map<std::string, int> map_func(std::string key) {
+myMap map_func(std::string key) {
 	/* map_func- Section 4.1.2
 	   Purpose: creates a key-value pair with a value one for a given key
 	   Input: string which will be the key of the key-value pair
@@ -66,12 +77,14 @@ std::map<std::string, int> map_func(std::string key) {
 	   Note: does not check for delimeters, only spaces.
 			 We can fix that later if we need to
 	*/
-	std::map<std::string, int> this_map;
-	this_map["key"] = 1;
-	return this_map;
+	myMap m1;
+	m1.key = key;
+	m1.value = 1;
+	cout << m1.key << " " << m1.value << endl;
+	return m1;
 }
 
-std::map<std::string, int> reduce(std::list<std::map<std::string, int>> l1) {
+myMap reduce(std::vector<myMap> v1) {
 	/* map_func- Section 4.1.3
 	   Purpose: creates a single key-value pair given a list of pairs with the same keys
 	   Input: list of key-value pairs, which should have the same key
@@ -80,8 +93,13 @@ std::map<std::string, int> reduce(std::list<std::map<std::string, int>> l1) {
 			 We can fix that later if we need to
 	*/
 
-	//TO DO
+	myMap m1;
+	m1.key = v1[0].key;
+	m1.value = v1.size();
+	return m1;
+}
 
-	std::map<std::string, int> this_map;
-	return this_map;
+void output(myMap m) {
+	cout << m.key << ": " << m.value << "\n";
+	return;
 }
