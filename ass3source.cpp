@@ -10,6 +10,10 @@ const int maxthreads = 4;
 int threads_created = 0;
 std::thread mythread[maxthreads];
 std::mutex mtx;
+std::vector<myMap> maps;
+myMap m;
+
+
 
 int main() {
 	ifstream in_file;
@@ -20,28 +24,29 @@ int main() {
 
 	std::vector<std::string> words; //Vector to hold unsorted words
 	words = input_read(in_file); //
-	std::vector<myMap> maps;
 
 	
 
-	for (int i = 0; i <= words.size(); i++) {
+	for (int i = 0; i <= words.size()-1; i++) {
 
-		for (int i = 0; i < maxthreads; i++)
-		{
-			mythread[i] = std::thread(map_func, words[i]);
-			//where does return value go?
-		}
-		for (int j = 0; j < maxthreads; j++) {
-			//if (mythread[j].joinable()) {
-			mythread[j].join();
-			//}
-
-		}
+		
 		myMap m = map_func(words[i]); //implement multiple threads??
 		maps.push_back(m);
-		threads_created = 1; //true
 
 	}
+
+	bubblesort(maps);
+
+	cout << "************************\n" << "Map vector sorted" << endl;
+	for (int i = 0; i <= maps.size()-1; i++) {
+		output(maps[i]);
+	}
+	cout << "******************\n";
+
+	//TO DO...
+	//need to group same "keys" together into vectors
+	//need to input grouped vectors into map reduce
+	//need to output result
 
 
 
@@ -51,7 +56,24 @@ int main() {
 	return 0;
 }
 
-
+void bubblesort(std::vector<myMap> &strings)
+{
+	typedef std::vector<myMap>::size_type size_type;
+	for (size_type i = 1; i < strings.size(); ++i) // for n-1 passes
+	{
+		// In pass i,compare the first n-i elements
+		// with their next elements
+		for (size_type j = 0; j < (strings.size() - 1); ++j)
+		{
+			if (strings[j].key > strings[j + 1].key)
+			{
+				myMap temp = strings[j];
+				strings[j].key = strings[j + 1].key;
+				strings[j + 1] = temp;
+			}
+		}
+	}
+}
 /*void func(int n) {
 
 
@@ -120,16 +142,10 @@ myMap map_func(std::string key) {
 			 We can fix that later if we need to
 	*/
 
-	while (threads_created == 0) {
-		//spin threads
-	}
 
-	mtx.lock();
 	myMap m1;
 	m1.key = key;
 	m1.value = 1;
-	cout << m1.key << " " << m1.value << endl;
-	mtx.unlock();
 	return m1;
 }
 
@@ -154,6 +170,6 @@ void output(myMap m) {
    Input: a single key-value pair
    Output: N/A
 */
-	cout << m.key << ": " << m.value << "\n";
+	cout <<"output " << m.key << ": " << m.value << "\n";
 	return;
 }

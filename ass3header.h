@@ -21,3 +21,4 @@ std::vector<std::string> input_read(std::ifstream& in_file);
 myMap map_func(std::string key);
 myMap reduce(std::vector<myMap> v1);
 void output(myMap m);
+void bubblesort(std::vector<myMap> &strings);
