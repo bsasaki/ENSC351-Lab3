@@ -47,6 +47,18 @@ int main() {
 	//need to group same "keys" together into vectors
 	//need to input grouped vectors into map reduce
 	//need to output result
+	//Multithreading..
+	//need threaded function of:
+	/*for (int i = 0; i <= words.size()-1; i++) {
+
+		
+		myMap m = map_func(words[i]); 
+		mtx.lock();
+		maps.push_back(m);
+		mtx.unlock();
+
+	}*/
+	//initialize threads in main func
 
 
 
