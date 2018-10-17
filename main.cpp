@@ -10,20 +10,13 @@ constexpr int MAX_THREADS = 4;
 mutex mtx;
 std::vector<std::thread> threads;
 std::vector<myMap> maps;
+std::vector<myMap> reduced_pairs;
 
 int main() {
 	ifstream in_file;
-	//std::map<std::string, int> wordCount;
 	in_file.open("L3In.txt", std::ifstream::in);
-	//wordCount = first_word_counter(in_file);
 	std::vector<std::string> words; //Vector to hold unsorted words
-	words = input_read(in_file); //
-	//map_thread(words, std::ref(maps));
-	
-	/*for (int i = 0; i <= words.size(); i++) {
-		myMap m = create_pair(words[i]);
-		maps.push_back(m);
-	}*/
+	words = input_read(in_file);
 
 	for (int i = 0; i < MAX_THREADS; i++) {
 		threads.push_back(std::thread(map_thread, words, i));
@@ -33,10 +26,27 @@ int main() {
 		threads[i].join();
 	}
 
-	bubblesort(maps);
-	std::vector<std::vector<myMap>> groups_of_keys = pre_reduce(maps);
+	threads.clear();
+
+	bubblesort(maps); //maps is now sorted alphabetically
+	std::vector<std::vector<myMap>> groups_of_keys = pre_reduce(maps); //groups_of_keys now holds vectors that each hold pairs with the same keys
+
+	for (int i = 0; i < MAX_THREADS; i++) {
+		threads.push_back(std::thread(reduce_thread, groups_of_keys, i));
+	}
+
+	for (int i = 0; i < MAX_THREADS; i++) {
+		threads[i].join();
+	}
+
+	sort_by_value(reduced_pairs);
+
+	for (int i = 0; i < reduced_pairs.size(); i++) {
+		output(reduced_pairs[i]);
+	}
 
 	in_file.close();
+	cin.get();
 	return 0;
 }
 
@@ -46,6 +56,16 @@ void map_thread(std::vector<std::string> words, int tid) {
 		mtx.lock();
 		m = create_pair(words[i]);
 		maps.push_back(m);
+		mtx.unlock();
+	}
+}
+
+void reduce_thread(std::vector<std::vector<myMap>> maps, int tid) {
+	myMap m;
+	for (int i = tid; i < maps.size(); i += 4) {
+		mtx.lock();
+		m = reduce(maps[i]);
+		reduced_pairs.push_back(m);
 		mtx.unlock();
 	}
 }
@@ -94,12 +114,10 @@ myMap create_pair(std::string key) {
 	   Input: string which will be the key of the key-value pair
 	   Output: key-value pair 
 	*/
-	//mtx.lock();
 	myMap m;
 	m.key = key;
 	m.value = 1;
-	cout << m.key << " " << m.value << endl;
-	//mtx.unlock();
+	//cout << m.key << " " << m.value << endl;
 	return m;
 }
 
@@ -138,6 +156,24 @@ void bubblesort(std::vector<myMap> &strings){
 			{
 				myMap temp = strings[j];
 				strings[j].key = strings[j + 1].key;
+				strings[j + 1] = temp;
+			}
+		}
+	}
+}
+
+void sort_by_value(std::vector<myMap> &strings) {
+	typedef std::vector<myMap>::size_type size_type;
+	for (size_type i = 1; i < strings.size(); ++i) // for n-1 passes
+	{
+		// In pass i,compare the first n-i elements
+		// with their next elements
+		for (size_type j = 0; j < (strings.size() - 1); ++j)
+		{
+			if (strings[j].value < strings[j + 1].value)
+			{
+				myMap temp = strings[j];
+				strings[j] = strings[j + 1];
 				strings[j + 1] = temp;
 			}
 		}
