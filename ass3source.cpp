@@ -5,108 +5,80 @@ Authors: Bennett Sasaki & Jordan Kam
 #include "ass3header.h"
 
 using namespace std;
-//MAX of 4 threads on this machine
-const int maxthreads = 4;
-int threads_created = 0;
-std::thread mythread[maxthreads];
-std::mutex mtx;
-std::vector<myMap> maps;
-myMap m;
 
+constexpr int MAX_THREADS = 4; //maximum cores available for us is 4
+mutex mtx;
+std::vector<std::thread> threads;
+std::vector<myMap> maps;
+std::vector<myMap> reduced_pairs;
+double total_time;
+
+std::chrono::time_point<std::chrono::high_resolution_clock, std::chrono::high_resolution_clock::duration> init_time;
 
 
 int main() {
 	ifstream in_file;
-	//std::map<std::string, int> wordCount;
 	in_file.open("L3In.txt", std::ifstream::in);
-	//wordCount = first_word_counter(in_file);
-	
-
 	std::vector<std::string> words; //Vector to hold unsorted words
-	words = input_read(in_file); //
+	words = input_read(in_file);
 
-	
+	init_time = std::chrono::high_resolution_clock::now(); //start timer
 
-	for (int i = 0; i <= words.size()-1; i++) {
 
-		
-		myMap m = map_func(words[i]); //implement multiple threads??
-		maps.push_back(m);
-
+	for (int i = 0; i < MAX_THREADS; i++) {
+		threads.push_back(std::thread(map_thread, words, i));
 	}
 
-	bubblesort(maps);
-
-	cout << "************************\n" << "Map vector sorted" << endl;
-	for (int i = 0; i <= maps.size()-1; i++) {
-		output(maps[i]);
+	for (int i = 0; i < MAX_THREADS; i++) {
+		threads[i].join();
 	}
-	cout << "******************\n";
 
-	//TO DO...
-	//need to group same "keys" together into vectors
-	//need to input grouped vectors into map reduce
-	//need to output result
-	//Multithreading..
-	//need threaded function of:
-	/*for (int i = 0; i <= words.size()-1; i++) {
+	threads.clear(); //clear threads
 
-		
-		myMap m = map_func(words[i]); 
-		mtx.lock();
-		maps.push_back(m);
-		mtx.unlock();
+	bubblesort(maps); //maps is now sorted alphabetically
+	std::vector<std::vector<myMap>> groups_of_keys = pre_reduce(maps); //groups_of_keys now holds vectors that each hold pairs with the same keys
 
-	}*/
-	//initialize threads in main func
+	for (int i = 0; i < MAX_THREADS; i++) {
+		threads.push_back(std::thread(reduce_thread, groups_of_keys, i)); //Map the keyvalue pairs using threads
+	}
 
+	for (int i = 0; i < MAX_THREADS; i++) {
+		threads[i].join();
+	}
 
+	sort_by_value(reduced_pairs); //sort the mapped pairs by descending values
 
-	cin.get();
+	for (int i = 0; i < reduced_pairs.size(); i++) {
+		output(reduced_pairs[i]);
+	}
 
+	total_time = get_time();
+
+	cout << "total runtime: " << total_time << "miliseconds" << endl;
 	in_file.close();
+	cin.get();
 	return 0;
 }
 
-void bubblesort(std::vector<myMap> &strings)
-{
-	typedef std::vector<myMap>::size_type size_type;
-	for (size_type i = 1; i < strings.size(); ++i) // for n-1 passes
-	{
-		// In pass i,compare the first n-i elements
-		// with their next elements
-		for (size_type j = 0; j < (strings.size() - 1); ++j)
-		{
-			if (strings[j].key > strings[j + 1].key)
-			{
-				myMap temp = strings[j];
-				strings[j].key = strings[j + 1].key;
-				strings[j + 1] = temp;
-			}
-		}
+void map_thread(std::vector<std::string> words, int tid) {
+	myMap m;
+	for (int i = tid; i < words.size(); i += MAX_THREADS) {
+		mtx.lock();
+		m = create_pair(words[i]);
+		maps.push_back(m);
+		mtx.unlock();
 	}
 }
-/*void func(int n) {
 
-
-	while (threads_created == 0) {
-		//do nothing
+void reduce_thread(std::vector<std::vector<myMap>> maps, int tid) {
+	myMap m;
+	for (int i = tid; i < maps.size(); i += MAX_THREADS) {
+		mtx.lock();
+		m = reduce(maps[i]);
+		reduced_pairs.push_back(m);
+		mtx.unlock();
 	}
-
-	mtx.lock();
-
-
-	//exclusive code here
-	mtx.unlock();
-
-
-
-	//do threading processes here
-	//cout << "Thread Number: " << n << "\n";
-	//cout << "From thread ID: " << std::this_thread::get_id() << "\n";
 }
-*/
-
 
 std::map<std::string, int> first_word_counter(ifstream& in_file) {
 	/* word_counter- Section 3
@@ -126,6 +98,12 @@ std::map<std::string, int> first_word_counter(ifstream& in_file) {
 	return wordMap;
 }
 
+double get_time() {
+	std::chrono::time_point<std::chrono::high_resolution_clock, std::chrono::high_resolution_clock::duration> time = std::chrono::high_resolution_clock::now();
+	double duration = double(std::chrono::duration_cast<std::chrono::milliseconds>(time - init_time).count());
+	return duration;
+}
+
 std::vector<std::string> input_read(std::ifstream& in_file) {
 	/* input_read- Section 4.1.1
 	   Purpose: return vector where each memeber is a word
@@ -139,35 +117,31 @@ std::vector<std::string> input_read(std::ifstream& in_file) {
 	while (in_file >> word) {
 		vect.push_back(word);
 	}
-	for (int i = 0; i < vect.size(); i++) {
+	/*for (int i = 0; i < vect.size(); i++) {
 		cout << vect[i] << endl;
-	}
+	}*/
 	return vect;
 }
 
-myMap map_func(std::string key) {
-	/* map_func- Section 4.1.2
+myMap create_pair(std::string key) {
+	/* create_pair- Section 4.1.2
+	   Formerly called "map_func"
 	   Purpose: creates a key-value pair with a value one for a given key
 	   Input: string which will be the key of the key-value pair
 	   Output: key-value pair
-	   Note: does not check for delimeters, only spaces.
-			 We can fix that later if we need to
 	*/
-
-
-	myMap m1;
-	m1.key = key;
-	m1.value = 1;
-	return m1;
+	myMap m;
+	m.key = key;
+	m.value = 1;
+	//cout << m.key << " " << m.value << endl;
+	return m;
 }
 
 myMap reduce(std::vector<myMap> v1) {
-	/* map_func- Section 4.1.3
+	/* create_pair- Section 4.1.3
 	   Purpose: creates a single key-value pair given a list of pairs with the same keys
 	   Input: list of key-value pairs, which should have the same key
 	   Output: a single key-value pair with correct value
-	   Note: does not check for delimeters, only spaces.
-			 We can fix that later if we need to
 	*/
 
 	myMap m1;
@@ -177,11 +151,73 @@ myMap reduce(std::vector<myMap> v1) {
 }
 
 void output(myMap m) {
-	/* map_func- Section 4.1.4
+	/* create_pair- Section 4.1.4
    Purpose: outputs word count for a given key-value pair
    Input: a single key-value pair
    Output: N/A
 */
-	cout <<"output " << m.key << ": " << m.value << "\n";
+	cout << m.key << ": " << m.value << "\n";
 	return;
+}
+
+void bubblesort(std::vector<myMap> &strings) {
+	typedef std::vector<myMap>::size_type size_type;
+	for (size_type i = 1; i < strings.size(); ++i) // for n-1 passes
+	{
+		// In pass i,compare the first n-i elements
+		// with their next elements
+		for (size_type j = 0; j < (strings.size() - 1); ++j)
+		{
+			if (strings[j].key > strings[j + 1].key)
+			{
+				myMap temp = strings[j];
+				strings[j].key = strings[j + 1].key;
+				strings[j + 1] = temp;
+			}
+		}
+	}
+}
+
+void sort_by_value(std::vector<myMap> &strings) {
+	typedef std::vector<myMap>::size_type size_type;
+	for (size_type i = 1; i < strings.size(); ++i) // for n-1 passes
+	{
+		// In pass i,compare the first n-i elements
+		// with their next elements
+		for (size_type j = 0; j < (strings.size() - 1); ++j)
+		{
+			if (strings[j].value < strings[j + 1].value)
+			{
+				myMap temp = strings[j];
+				strings[j] = strings[j + 1];
+				strings[j + 1] = temp;
+			}
+		}
+	}
+}
+
+std::vector<std::vector<myMap>> pre_reduce(std::vector<myMap> single_words) {
+	/* pre-reduce
+	   this function takes the bubble-sorted pairs and groups together the pairs with the same keys, so they can go into reduce
+	Input: Vector of maps, already sorted alphabetically
+	Output: Vector of vectors of maps, each vector holding all the pairs with the same key
+	*/
+	std::vector<std::vector<myMap>> master;
+	std::vector<myMap> dummy;
+	dummy.push_back(single_words[0]);
+	std::string current_key = single_words[0].key;
+	for (int i = 1; i < single_words.size(); i++) {
+		if (single_words[i].key == current_key) {
+			dummy.push_back(single_words[i]);
+			continue;
+		}
+		else {
+			master.push_back(dummy);
+			dummy.clear();
+			current_key = single_words[i].key;
+			dummy.push_back(single_words[i]);
+		}
+	}
+	master.push_back(dummy);
+	return master;
 }
