@@ -6,28 +6,48 @@ Authors: Bennett Sasaki & Jordan Kam
 
 using namespace std;
 
+constexpr int MAX_THREADS = 4;
+mutex mtx;
+std::vector<std::thread> threads;
+std::vector<myMap> maps;
 
 int main() {
 	ifstream in_file;
 	//std::map<std::string, int> wordCount;
 	in_file.open("L3In.txt", std::ifstream::in);
 	//wordCount = first_word_counter(in_file);
-
 	std::vector<std::string> words; //Vector to hold unsorted words
 	words = input_read(in_file); //
-	std::vector<myMap> maps;
+	//map_thread(words, std::ref(maps));
 	
-	for (int i = 0; i <= words.size(); i++) {
-		myMap m = map_func(words[i]);
+	/*for (int i = 0; i <= words.size(); i++) {
+		myMap m = create_pair(words[i]);
 		maps.push_back(m);
+	}*/
+
+	for (int i = 0; i < MAX_THREADS; i++) {
+		threads.push_back(std::thread(map_thread, words, i));
 	}
 
+	for (int i = 0; i < MAX_THREADS; i++) {
+		threads[i].join();
+	}
 
-
-	cin.get();
+	bubblesort(maps);
+	std::vector<std::vector<myMap>> groups_of_keys = pre_reduce(maps);
 
 	in_file.close();
 	return 0;
+}
+
+void map_thread(std::vector<std::string> words, int tid) {
+	myMap m;
+	for (int i = tid; i < words.size(); i += 4) {
+		mtx.lock();
+		m = create_pair(words[i]);
+		maps.push_back(m);
+		mtx.unlock();
+	}
 }
 
 std::map<std::string, int> first_word_counter(ifstream& in_file) {
@@ -61,34 +81,33 @@ std::vector<std::string> input_read(std::ifstream& in_file) {
 	while (in_file >> word) {
 		vect.push_back(word);
 	}
-	for (int i = 0; i < vect.size(); i++) {
+	/*for (int i = 0; i < vect.size(); i++) {
 		cout << vect[i] << endl;
-	}
+	}*/
 	return vect;
 }
 
-myMap map_func(std::string key) {
-	/* map_func- Section 4.1.2
+myMap create_pair(std::string key) {
+	/* create_pair- Section 4.1.2
+	   Formerly called "map_func"
 	   Purpose: creates a key-value pair with a value one for a given key
 	   Input: string which will be the key of the key-value pair
 	   Output: key-value pair 
-	   Note: does not check for delimeters, only spaces.
-			 We can fix that later if we need to
 	*/
-	myMap m1;
-	m1.key = key;
-	m1.value = 1;
-	cout << m1.key << " " << m1.value << endl;
-	return m1;
+	//mtx.lock();
+	myMap m;
+	m.key = key;
+	m.value = 1;
+	cout << m.key << " " << m.value << endl;
+	//mtx.unlock();
+	return m;
 }
 
 myMap reduce(std::vector<myMap> v1) {
-	/* map_func- Section 4.1.3
+	/* create_pair- Section 4.1.3
 	   Purpose: creates a single key-value pair given a list of pairs with the same keys
 	   Input: list of key-value pairs, which should have the same key
 	   Output: a single key-value pair with correct value
-	   Note: does not check for delimeters, only spaces.
-			 We can fix that later if we need to
 	*/
 
 	myMap m1;
@@ -98,11 +117,55 @@ myMap reduce(std::vector<myMap> v1) {
 }
 
 void output(myMap m) {
-	/* map_func- Section 4.1.4
+	/* create_pair- Section 4.1.4
    Purpose: outputs word count for a given key-value pair
    Input: a single key-value pair
    Output: N/A
 */
 	cout << m.key << ": " << m.value << "\n";
 	return;
+}
+
+void bubblesort(std::vector<myMap> &strings){
+	typedef std::vector<myMap>::size_type size_type;
+	for (size_type i = 1; i < strings.size(); ++i) // for n-1 passes
+	{
+		// In pass i,compare the first n-i elements
+		// with their next elements
+		for (size_type j = 0; j < (strings.size() - 1); ++j)
+		{
+			if (strings[j].key > strings[j + 1].key)
+			{
+				myMap temp = strings[j];
+				strings[j].key = strings[j + 1].key;
+				strings[j + 1] = temp;
+			}
+		}
+	}
+}
+
+std::vector<std::vector<myMap>> pre_reduce(std::vector<myMap> single_words) {
+	/* pre-reduce
+	   this function takes the bubble-sorted pairs and groups together the pairs with the same keys, so they can go into reduce
+	Input: Vector of maps, already sorted alphabetically
+	Output: Vector of vectors of maps, each vector holding all the pairs with the same key
+	*/
+	std::vector<std::vector<myMap>> master;
+	std::vector<myMap> dummy;
+	dummy.push_back(single_words[0]);
+	std::string current_key = single_words[0].key;
+	for (int i = 1; i < single_words.size(); i++) {
+		if (single_words[i].key == current_key) {
+			dummy.push_back(single_words[i]);
+			continue;
+		}
+		else {
+			master.push_back(dummy);
+			dummy.clear();
+			current_key = single_words[i].key;
+			dummy.push_back(single_words[i]);
+		}
+	}
+	master.push_back(dummy);
+	return master;
 }
