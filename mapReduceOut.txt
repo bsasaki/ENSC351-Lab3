@@ -1,0 +1,65 @@
+---------------Single-Threaded---------------
+hello: 75
+hi: 50
+yeet: 50
+apple: 50
+orange: 25
+Total Time for Single-Threaded: 2ms
+
+---------------MapReduce---------------
+hello: 75
+apple: 50
+yeet: 50
+hi: 50
+orange: 25
+Total Time for MapReduce: 383ms
+---------------Single-Threaded---------------
+hello: 75
+hi: 50
+yeet: 50
+apple: 50
+orange: 25
+Total Time for Single-Threaded: 2ms
+
+---------------MapReduce---------------
+hello: 75
+apple: 50
+yeet: 50
+hi: 50
+orange: 25
+Total Time for MapReduce: 396ms
+---------------Single-Threaded---------------
+hello: 75
+hi: 50
+yeet: 50
+apple: 50
+orange: 25
+Total Time for Single-Threaded: 2ms
+
+---------------MapReduce---------------
+hello: 75
+apple: 50
+yeet: 50
+hi: 50
+orange: 25
+Total Time for MapReduce: 326ms
+---------------Single-Threaded---------------
+hello: 75
+hi: 50
+yeet: 50
+apple: 50
+orange: 25
+Total Time for Single-Threaded: 2ms
+
+---------------MapReduce---------------
+hello: 75
+apple: 50
+yeet: 50
+hi: 50
+orange: 25
+Total Time for MapReduce: 330ms
+
+Total time for Single Threaded: 8ms
+Average time for Single Threaded: 2ms
+Total Time for MapReduce: 1435ms
+Average Time for MapReduce: 358.75ms
